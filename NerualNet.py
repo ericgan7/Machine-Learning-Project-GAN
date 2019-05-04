@@ -1,23 +1,26 @@
 
 from keras.models import Sequential, Model, load_model
-from keras.layers import Flatten, Input, Dense, Dropout, BatchNormalization, Lambda, GRU, LSTM, Bidirectional, concatenate
+from keras.layers import Dense, Flatten
 from keras.layers.advanced_activations import LeakyReLU
 from keras.regularizers import l2, l1
 from keras.optimizers import Adam, SGD, RMSprop, Nadam
 from keras.callbacks import Callback
 
-import sys
 import numpy as np
-import random
-import os
 import matplotlib.pyplot as plt
 
 class AccuracyHistory(Callback):
+    def __init__(self, data, label):
+        self.data = data
+        self.label = label
+
     def on_train_begin(self,logs={}):
         self.acc = []
+        self.test = []
 
-    def on_batch_end(self,batch, logs={}):
+    def on_epoch_end(self,batch, logs={}):
         self.acc.append(logs.get('acc'))
+        self.test.append(self.model.evaluate(self.data, self.label)[1])
 
 class NerualNetwork():
     def __init__(self, name = "temp", hidden_layer = 10, regularization = 0.0):
@@ -33,7 +36,7 @@ class NerualNetwork():
     
     def build_model(self):
         self.model = Sequential([
-            Dense(self.hidden_layer, input_dim = self.input_dimension, activation = 'relu', kernel_regularizer = l1(self.regularization)),
+            Dense(self.hidden_layer, input_dim = self.input_dimension, activation = 'relu', kernel_regularizer = l2(self.regularization)),
             Dense(self.output_dimension, activation = 'softmax')
         ])
         self.model.compile(optimizer = 'adam', loss = "sparse_categorical_crossentropy", metrics=['accuracy'])
@@ -79,30 +82,28 @@ class NerualNetwork():
 
     def train(self, epochs = 100, batch_size = 32):
         print("Begin Training")
-        history = AccuracyHistory()
+        history = AccuracyHistory(self.testData, self.testLabel)
         self.model.fit(self.trainData, self.trainLabel, epochs = epochs, batch_size = batch_size, callbacks=[history])
-        score = self.model.evaluate(self.testData, self.testLabel)
-        self.plot(history.acc, score[1])
-        print(score)
+        self.plot(history.acc, history.test)
 
     def plot(self, acc, score):
         print("Training model with {0} hidden layers".format(self.hidden_layer))
         plt.figure()
         plt.plot(range(len(acc)), acc, label="Training Score")
-        plt.plot(range(len(acc)), np.full(len(acc), score), label = "Test Score")
-        plt.xlabel('Batch')
+        plt.plot(range(len(score)), score, label = "Test Score")
+        plt.xlabel('Epoch')
         plt.ylabel('Accuracy')
         plt.legend()
         plt.title('Classifier')
         plt.grid(True)
         plt.savefig("model/" + self.name + ".png")
         plt.figure("combined")
-        plt.plot(range(len(acc)), acc, label = str(self.regularization))
-        plt.plot(range(len(acc)), np.full(len(acc), score), label = str(self.regularization) + "score")
+        plt.plot(range(len(acc)), acc, label = str(self.hidden_layer) + "train")
+        plt.plot(range(len(acc)), score, label = str(self.hidden_layer) + "score")
 
     def initcombinedplot(self):
         plt.figure("combined")
-        plt.xlabel('Batch')
+        plt.xlabel('Epoch')
         plt.ylabel('Accuracy')
         plt.title('Classifier')
         plt.grid(True)
@@ -131,12 +132,12 @@ class NerualNetwork():
         print(saveTo.shape)
 """
 if __name__ == '__main__':
-    sizes = [0.01, 0.05, 0.1, 0.2 ,0.3, 0.5]
-    nnclassifier = NerualNetwork("[temprelu+softmax]Adam0.001", 10, 0.1)
+    sizes = [5, 10, 25, 50, 100, 200]
+    nnclassifier = NerualNetwork("[temprelu+softmax]Adam0.001", 10)
     nnclassifier.load_data("data/train.csv", "data/test.csv")
     nnclassifier.initcombinedplot()
     for i in sizes:
-        nnclassifier.__init__("[100relu+softmax]Adam0.001+l1" + str(i), 100, i)
+        nnclassifier.__init__("[" + str(i) + "relu+softmax]Adam0.001", i)
         #nnclassifier.load_data(("trainimages", "trainlabels"), ("testimages", "testlabels"))
-        nnclassifier.train(epochs=10, batch_size=500)
+        nnclassifier.train(epochs=10, batch_size=100)
     nnclassifier.savecombinedplot()
