@@ -37,7 +37,7 @@ class NerualNetwork():
     def build_model(self):
         self.model = Sequential([
             Dense(self.hidden_layer, input_dim = self.input_dimension, activation = 'relu', kernel_regularizer = l2(self.regularization)),
-            Dense(self.output_dimension, activation = 'softmax')
+            Dense(self.output_dimension, activation = 'sigmoid')
         ])
         self.model.compile(optimizer = 'adam', loss = "sparse_categorical_crossentropy", metrics=['accuracy'])
 
@@ -60,7 +60,7 @@ class NerualNetwork():
                 #lab = [0 for i in range(10)]
                 #lab[int(image[0])] = 1
                 label.append(image[0])
-            self.trainData = np.array(data) / 255
+            self.trainData = np.array(data) / 127.5 - 1
             self.trainLabel = np.array(label)
         with open(test, 'r') as f:
             print("Loading {}".format(test))
@@ -76,7 +76,7 @@ class NerualNetwork():
                 #lab = [0 for i in range(10)]
                 #lab[int(image[0])] = 1
                 label.append(image[0])
-            self.testData = np.array(data) / 255
+            self.testData = np.array(data) / 127.5 - 1
             self.testLabel = np.array(label)
         print("Done Loading Data")
 
@@ -84,16 +84,17 @@ class NerualNetwork():
         print("Begin Training")
         history = AccuracyHistory(self.testData, self.testLabel)
         self.model.fit(self.trainData, self.trainLabel, epochs = epochs, batch_size = batch_size, callbacks=[history])
+        print("Training Accuracy: {0}, Test Accuracy: {1}".format(history.acc[-1], history.test[-1]))
         self.plot(history.acc, history.test)
 
     def plot(self, acc, score):
-        print("Training model with {0} hidden layers".format(self.hidden_layer))
+        print("Trained model with {0} hidden layers".format(self.hidden_layer))
         plt.figure()
         plt.plot(range(len(acc)), acc, label="Training Score")
         plt.plot(range(len(score)), score, label = "Test Score")
         plt.xlabel('Epoch')
         plt.ylabel('Accuracy')
-        plt.legend()
+        plt.legend() 
         plt.title('Classifier')
         plt.grid(True)
         plt.savefig("model/" + self.name + ".png")
@@ -137,7 +138,7 @@ if __name__ == '__main__':
     nnclassifier.load_data("data/train.csv", "data/test.csv")
     nnclassifier.initcombinedplot()
     for i in sizes:
-        nnclassifier.__init__("[" + str(i) + "relu+softmax]Adam0.001", i)
+        nnclassifier.__init__("[" + str(i) + "sig+softmax]Adam0.001", i)
         #nnclassifier.load_data(("trainimages", "trainlabels"), ("testimages", "testlabels"))
         nnclassifier.train(epochs=10, batch_size=100)
-    nnclassifier.savecombinedplot()
+    

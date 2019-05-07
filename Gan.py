@@ -21,7 +21,6 @@ class GAN():
         self.d_loss_fake_log = []
         self.g_loss = []
         self.epoch = []
-        self.labeled_data
 
         #Create and compile generator, used to generate images for training the discriminator
         self.generator = self.build_generator()
@@ -109,6 +108,7 @@ class GAN():
                     self.epoch.append(epoch)
                 if (epoch % sample_interval == 0):
                     self.generate_images(epoch)
+
         except KeyboardInterrupt:
             self.save_generator_model()
         self.generate_images(epochs)
@@ -182,6 +182,6 @@ class GAN():
 if __name__ == '__main__':
     gan = GAN()
     gan.load_data("data/train.csv", "data/test.csv")
-    #gan.train(epochs = 10000, batch_size = 50, plot_interval = 50, sample_interval= 500)
-    #gan.save_generator_model("generator")
-    #gan.plot("gantest.png")
+    gan.train(epochs = 30000, batch_size = 50, plot_interval = 50, sample_interval= 500)
+    gan.save_generator_model("generator")
+    gan.plot("gantest.png")

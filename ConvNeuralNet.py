@@ -36,6 +36,9 @@ class NerualNetwork():
             Conv2D(filters = 64, input_shape = self.input_dimension, kernel_size = 2, padding = 'same', activation = 'relu'),
             MaxPool2D(pool_size = 2),
 
+            Conv2D(filters = 32, input_shape = self.input_dimension, kernel_size = 2, padding = 'same', activation = 'relu'),
+            MaxPool2D(pool_size = 2),
+
             Flatten(),
             Dense(50, activation = 'relu', kernel_regularizer = l2(0.0)),
             Dense(self.output_dimension, activation = 'softmax')
@@ -46,6 +49,8 @@ class NerualNetwork():
         print("Begin Training")
         history = AccuracyHistory(self.testData, self.testLabel)
         self.model.fit(self.trainData, self.trainLabel, epochs = epochs, batch_size = batch_size, callbacks=[history])
+        #self.model.save("convolutionNN.h5")
+        print("Training: {0}, Test {1}".format(history.acc[-1], history.test[-1]))
         self.plot(history.acc, history.test)
 
     def plot(self, acc, score):
@@ -79,7 +84,7 @@ class NerualNetwork():
                 #lab = [0 for i in range(10)]
                 #lab[int(image[0])] = 1
                 label.append(image[0])
-            self.trainData = np.array(data) - 127.5
+            self.trainData = np.array(data)/127.5 - 1
             self.trainData = self.trainData.reshape([len(data)] + self.input_dimension)
             self.trainLabel = np.array(label)
         with open(test, 'r') as f:
@@ -96,13 +101,13 @@ class NerualNetwork():
                 #lab = [0 for i in range(10)]
                 #lab[int(image[0])] = 1
                 label.append(image[0])
-            self.testData = np.array(data) - 127.5
+            self.testData = np.array(data)/127.5 - 1
             self.testData = self.testData.reshape([len(data)] + self.input_dimension)
             self.testLabel = np.array(label)
         print("Done Loading Data")
 
 if __name__ == '__main__':
-    nnclassifier = NerualNetwork("ZeroCentered[64conv50relu+softmax]Adam0.001+l20.1")
+    nnclassifier = NerualNetwork("ZeroCentered[64conv50relu+softmax]Adam0.001")
     nnclassifier.load_data("data/train.csv", "data/test.csv")
     nnclassifier.train(epochs= 10, batch_size= 100)
 
